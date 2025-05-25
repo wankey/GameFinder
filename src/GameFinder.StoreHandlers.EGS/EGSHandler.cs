@@ -11,7 +11,12 @@ using OneOf;
 namespace GameFinder.StoreHandlers.EGS;
 
 [UsedImplicitly]
-internal record ManifestFile(string CatalogItemId, string DisplayName, string InstallLocation);
+internal record ManifestFile(
+    string CatalogItemId,
+    string AppName,
+    string DisplayName,
+    string InstallLocation,
+    bool bIsApplication);
 
 /// <summary>
 /// Handler for finding games installed with the Epic Games Store.
@@ -69,7 +74,8 @@ public class EGSHandler : AHandler<EGSGame, EGSGameId>
 
         if (itemFiles.Length == 0)
         {
-            yield return new ErrorMessage($"The manifest directory {manifestDir.GetFullPath()} does not contain any .item files");
+            yield return new ErrorMessage(
+                $"The manifest directory {manifestDir.GetFullPath()} does not contain any .item files");
             yield break;
         }
 
@@ -98,6 +104,11 @@ public class EGSHandler : AHandler<EGSGame, EGSGameId>
                 return new ErrorMessage($"Manifest {itemFile.GetFullPath()} does not have a value \"CatalogItemId\"");
             }
 
+            if (manifest.AppName is null)
+            {
+                return new ErrorMessage($"Manifest {itemFile.GetFullPath()} does not have a value \"AppName\"");
+            }
+
             // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             if (manifest.DisplayName is null)
             {
@@ -111,8 +122,10 @@ public class EGSHandler : AHandler<EGSGame, EGSGameId>
 
             var game = new EGSGame(
                 EGSGameId.From(manifest.CatalogItemId),
+                manifest.AppName,
                 manifest.DisplayName,
-                _fileSystem.FromUnsanitizedFullPath(manifest.InstallLocation)
+                _fileSystem.FromUnsanitizedFullPath(manifest.InstallLocation),
+                manifest.bIsApplication
             );
 
             return game;
@@ -151,7 +164,6 @@ public class EGSHandler : AHandler<EGSGame, EGSGameId>
 
             manifestDir = _fileSystem.FromUnsanitizedFullPath(registryMetadataDir);
             return true;
-
         }
         catch (Exception)
         {

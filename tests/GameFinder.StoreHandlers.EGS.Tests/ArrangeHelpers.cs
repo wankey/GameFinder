@@ -6,7 +6,8 @@ namespace GameFinder.StoreHandlers.EGS.Tests;
 
 public partial class EGSTests
 {
-    private static (EGSHandler handler, AbsolutePath manifestDir) SetupHandler(InMemoryFileSystem fs, InMemoryRegistry registry)
+    private static (EGSHandler handler, AbsolutePath manifestDir) SetupHandler(InMemoryFileSystem fs,
+        InMemoryRegistry registry)
     {
         var fixture = new Fixture();
 
@@ -30,21 +31,24 @@ public partial class EGSTests
 
         fixture
             .Customize<EGSGame>(composer => composer
-                .FromFactory<string, string>((catalogItemId, displayName) =>
+                .FromFactory<string, string, string, bool>((catalogItemId, appName, displayName, isApplication) =>
                 {
                     var manifestItem = manifestDir.Combine($"{catalogItemId}.item");
                     var installLocation = manifestDir.Combine(displayName);
 
                     var mockData = $@"{{
     ""CatalogItemId"": ""{catalogItemId}"",
+    ""AppName"": ""{appName}"",
     ""DisplayName"": ""{displayName}"",
-    ""InstallLocation"": ""{installLocation.GetFullPath().ToEscapedString()}""
+    ""InstallLocation"": ""{installLocation.GetFullPath().ToEscapedString()}"",
+""IsApplication"": {isApplication}
 }}";
 
                     fs.AddDirectory(installLocation);
                     fs.AddFile(manifestItem, mockData);
 
-                    return new EGSGame(EGSGameId.From(catalogItemId), displayName, installLocation);
+                    return new EGSGame(EGSGameId.From(catalogItemId), appName, displayName, installLocation,
+                        isApplication);
                 })
                 .OmitAutoProperties());
 
